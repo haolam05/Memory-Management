@@ -1,0 +1,46 @@
+BRIEF DESCRIPTIONOF HEAP DATA STRUCTURE AND ALGORITHM
+    * Data Structure
+        => The Heap data structure we used is just a linked list
+    * Algorithm
+        ** getmem
+            We make sure that there is at most 3 iterations through the heap. 
+            The first iteration is to check if we have the desired block size on the freelist.
+            If we do, we can returned it, otherwise, we ask the underlying system for more space
+            and call getmem again. When we asked underlying system for a new block, we iterate the
+            second time through the freelist to figure out the correct spot to put it on. After that,
+            we call getmem again, which is where the third iteration happened. As a design choice, we
+            decided to split whenever the block on the freelist is larger than 20% of the requested size.
+            Note: we do NOT need to merge any adjacent blocks when we put the block back on the freelist
+                  because we know for sure that we will use that block when we called getmem again
+                  (reason we ask underlying system for more blocks is because we do not have a large
+                   enough block on the freelist in the first place!!)
+                  Thus, merging process is only necessary for freemem()
+        ** freemem
+            The general strategy is to first created a new block with the size of the freed block. Next,
+            we iterate through the freelist to figure out the correct position(addresses in ASC ordered)
+            to put the new block on the freelist based on 3 scenarios
+                1) free is is empty                             => set freelist equal to newBlock
+                2) newBlock comes before freelist first node    =>  prepend
+                3) newBlock comes after freelist first node     => iterate and prepend
+            After that, we iterate through the freelist once more to join any adjacent blocks if we found
+            one. So there will be always 2 iterations.
+
+SUMMARY OF RESULTS OB0VSERVED FROM BENCH PROGRAM
+    Note: "mem_stats.txt" is the default output file for print_heap()
+    There are several interesting trends seen from the bench program. First of all, we noticed that if the
+    pctLarge is huge, the program takes much longer to run. It makes sense because as mentioned above in
+    the getmem algorithm, getmem algorithm take from 1 to 3 iterations. Thus, if the pctLarge is dominant,
+    we will often ask underlying system for more space, therefore, it takes more time to compute. Moreover,
+    as the freelist grows, the time it takes for each iteration is much longer. On the other hand, we noticed
+    that the blocks size toward the beginning of the freelist is pretty small compared to the rest. Since they
+    are small, the rarely will be used. However, we still need to iterate through them every time. On the other
+    hand, we can adjust the default size when calling malloc based on the large_limit to small_limit ratio, the
+    pctget to pctfree ratio. If we know our small_limit is high, we can adjust our default size for malloc to a
+    higher number to avoid malloc to be called many times.
+
+    There are 5 provided test cases: (with assertions on, and called print_heap at the end)
+        1) make test1: ~0.000000 seconds
+        2) make test2: ~0.015625 seconds
+        3) make test3: ~27.96875 seconds
+        4) make test4: ~24.09375 seconds
+        5) make test5: ~2.140625 seconds
